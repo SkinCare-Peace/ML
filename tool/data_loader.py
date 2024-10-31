@@ -82,6 +82,7 @@ class CustomDataset_class(Dataset):
             "elasticity_R2",
             "wrinkle_Ra",
             "pore",
+            "dryness"
         ]
         self.img_path = "dataset/img"
         self.json_path = "dataset/label"

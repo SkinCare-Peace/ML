@@ -441,3 +441,114 @@ class Model_test(Model):
             self.gt[self.m_dig].append([gt_item.item(), self.img_names[idx]])
             
             
+
+"""
+from collections import defaultdict
+import random
+import torch
+import torch.nn as nn
+import numpy as np
+from scipy.stats import pearsonr
+from tqdm import tqdm
+from data_loader import mkdir
+import torch.optim as optim
+from torchvision.models import efficientnet_b0  # EfficientNet 가져오기
+from utils import (
+    AverageMeter,
+    mape_loss,
+    save_checkpoint,
+    save_image,
+    CB_loss
+)
+import os
+from sklearn.metrics import precision_recall_fscore_support, mean_absolute_error
+
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+else:
+    device = torch.device("cpu")
+
+
+class Model(object):
+    def __init__(
+        self,
+        args,
+        train_loader,
+        valid_loader,
+        logger,
+        check_path,
+        model_num_class,
+        writer,
+        dig_k,
+        grade_num,
+    ):
+        # EfficientNet 초기화
+        self.model = efficientnet_b0(pretrained=True).to(device)
+        
+        # 최종 출력 레이어 수정 (피부 상태를 위한 클래스 수 조정)
+        num_features = self.model.classifier[1].in_features
+        self.model.classifier[1] = nn.Linear(num_features, model_num_class)
+
+        (
+            self.args,
+            self.train_loader,
+            self.valid_loader,
+            self.best_loss,
+            self.logger,
+            self.check_path,
+            self.model_num_class,
+            self.writer,
+            self.m_dig,
+            self.grade_num
+        ) = (
+            args,
+            train_loader,
+            valid_loader,
+            args.best_loss,
+            logger,
+            check_path,
+            model_num_class,
+            writer,
+            dig_k,
+            grade_num,
+        )
+
+        self.train_loss, self.val_loss = AverageMeter(), AverageMeter()
+        self.keep_acc = {
+            "sagging": AverageMeter(),
+            "wrinkle_forehead": AverageMeter(),
+            "wrinkle_glabellus": AverageMeter(),
+            "wrinkle_perocular": AverageMeter(),
+            "pore": AverageMeter(),
+            "pigmentation_forehead": AverageMeter(),
+            "pigmentation_cheek": AverageMeter(),
+            "dryness": AverageMeter(),
+        }
+        self.keep_mae = {
+            "moisture": 0,
+            "wrinkle": 0,
+            "elasticity": 0,
+            "pore": 0,
+            "count": 0,
+        }
+        self.epoch = 0
+
+        (
+            self.phase,
+            self.update_c,
+            self.stop_loss,
+            self.device,
+        ) = (None, 0, np.inf, device)
+        self.pred, self.gt = list(), list()
+        self.pred_t, self.gt_t = list(), list()
+
+        self.optimizer = torch.optim.Adam(
+            params=self.model.parameters(),
+            lr=self.args.lr,
+            betas=(0.9, 0.999),
+            weight_decay=0,
+        )
+        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+            self.optimizer, "min", patience=20
+        )
+"""

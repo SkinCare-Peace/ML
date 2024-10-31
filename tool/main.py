@@ -11,13 +11,13 @@ from torch.utils import data
 import shutil
 import torch.nn as nn
 import numpy as np
-from torchvision import models
+from torchvision import models # PyTorch에서 제공하는 사전 학습된 모델을 사용
 from tensorboardX import SummaryWriter
 from utils import  mkdir, resume_checkpoint, fix_seed, CB_loss
 from logger import setup_logger
 from tool.data_loader import CustomDataset_class, CustomDataset_regress
 from model import Model
-import argparse
+import argparse 
 
 fix_seed(523)
 git_name = os.popen("git branch --show-current").readlines()[0].rstrip()
@@ -32,7 +32,7 @@ def parse_args():
         type=str,
     )
 
-    parser.add_argument("--equ", type=int, default=[1], choices=[1, 2, 3], nargs="+")
+    parser.add_argument("--equ", type=int, default=[1], choices=[1, 2, 3], nargs="+") 
 
     parser.add_argument("--stop_early", type=int, default=50)
 
@@ -75,7 +75,7 @@ def parse_args():
 
     parser.add_argument(
         "--lr",
-        default=0.005,
+        default=0.005, # 학습률 0.005
         type=float,
     )
 
@@ -91,11 +91,11 @@ def parse_args():
         type=int,
     )
 
-    parser.add_argument("--reset", action="store_true")
+    parser.add_argument("--reset", action="store_true") # --reset 인수가 설정되면 기존의 체크포인트와 로그 파일을 삭제하고 새로운 학습을 시작
 
     args = parser.parse_args()
 
-    return args
+    return args # 모든 인수를 파싱하여 반환
 
 
 def main(args):
@@ -103,7 +103,7 @@ def main(args):
     log_path = os.path.join("tensorboard", git_name, args.mode, args.name)
 
     model_num_class = (
-        {"dryness": 5, "pigmentation": 6, "pore": 6, "sagging": 7, "wrinkle": 7}
+        {"dryness":5, "pigmentation": 6, "pore": 6, "sagging": 7, "wrinkle": 7}
         if args.mode == "class"
         else {
             "pigmentation": 1,
@@ -123,11 +123,32 @@ def main(args):
         for key, _ in model_num_class.items()
     }
 
+    '''
+    ### 위에꺼는 resNet, 아래로 변경하면 efficient Net b0 
+    from torchvision.models import efficientnet_b0  # Import the EfficientNet model
+
+    model_list = {
+        key: efficientnet_b0(weights="IMAGENET1K_V1")  # EfficientNet 모델을 초기화
+        for key, _ in model_num_class.items()
+    }
+
+    '''
+
     model_path = os.path.join(check_path, "save_model")
         
     for key, model in model_list.items(): 
         model.fc = nn.Linear(model.fc.in_features, model_num_class[key], bias = True)
         model_list.update({key: model})
+
+    ''' 
+    ### 여기 for문부터도,  EfficientNet의 classifier[1]은 마지막 완전 연결 레이어이므로, 이를 model_num_class[key]에 맞게 수정
+    
+    for key, model in model_list.items(): 
+    num_features = model.classifier[1].in_features
+    model.classifier[1] = nn.Linear(num_features, model_num_class[key], bias=True)
+    model_list.update({key: model})
+
+    '''
         
 
     args.save_img = os.path.join(check_path, "save_img")
@@ -175,8 +196,8 @@ def main(args):
         if key in pass_list:
             continue
 
-        model = model_list[key].cuda()
-
+        model = model_list[key].cpu()
+        print("!@#",key)
         trainset, grade_num = dataset.load_dataset("train", key)
         trainset_loader = data.DataLoader(
             dataset=trainset,
@@ -220,7 +241,9 @@ def main(args):
 
         del trainset_loader, valset_loader
 
-        torch.cuda.empty_cache()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
         gc.collect()
 
 
