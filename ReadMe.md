@@ -30,7 +30,9 @@ mode는 따로 입력하지 않으면 "육안평가"가 되고 mode를 regressio
 ex) python tool/main.py --name "test" --mode "class"  // test1.. n 으로
 
 ### 검증
-```python tool/test.py --name "```
+```
+python tool/test.py --name "
+```
 앞서 저장한 체크포인트 이름"
 ```
 --mode "class" or "regression"
