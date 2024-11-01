@@ -6,11 +6,11 @@ python tool/img_crop.py
 ### 데이터셋 폴더 위치설정
 
 {$ROOT}
-|-- dataset
-|    ㄴㅡ img -- 01,02,03
-|    ㄴㅡ label -- 01, 02, 03
-|    ㄴㅡ cropped_img -- 01, 02, 03
-|-- tool
+ㅣ-- dataset
+ㅣ    ㄴㅡ img -- 01,02,03 
+ㅣ    ㄴㅡ label -- 01, 02, 03
+ㅣ    ㄴㅡ cropped_img -- 01, 02, 03
+ㅣ-- tool
 
 ### 요구사항
 pip install requests einops tensorboardX pillow scipy scikit-learn
