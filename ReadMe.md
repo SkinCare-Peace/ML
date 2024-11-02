@@ -42,3 +42,8 @@ python tool/test.py --name "
 ### 참고사항
 모델 변경 전임
 
+
+### 메모
+CUDA 설치  
+nvidia-smi
+
