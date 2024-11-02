@@ -25,15 +25,15 @@ pip install errno json cv2 os tqdm
 ```
 
 ### 학습 커멘드
-mode는 따로 입력하지 않으면 "육안평가"가 되고 mode를 regression을 입력하면 "정밀 기기측정값" 예측이 된다
-커멘드 : python tool/main.py --name "체크포인트 이름" --mode "class" or "regression"
-ex) python tool/main.py --name "test" --mode "class"  // test1.. n 으로
+mode는 따로 입력하지 않으면 "육안평가"가 되고 mode를 regression을 입력하면 "정밀 기기측정값" 예측이 된다   
+커멘드 : python tool/main.py --name "체크포인트 이름" --mode "class" or "regression"   
+ex) python tool/main.py --name "test" --mode "class"  // test1.. n 으로   
 
 ### 검증
 ```
-python tool/test.py --name "
+python tool/test.py --name   
 ```
-앞서 저장한 체크포인트 이름"
+"앞서 저장한 체크포인트 이름"
 ```
 --mode "class" or "regression"
 ```
