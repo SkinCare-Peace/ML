@@ -39,11 +39,7 @@ python tool/test.py --name
 --mode "class" or "regression"
 ```
 
-test.py 실행
-```bash
-python tool/test.py --output_dir "output_directory_path" --mode "desired_mode" --name "model_name" --load_name "checkpoint_name"
-````
-
+##### test.py 실행
 mode는 따로 입력하지 않으면 "육안평가"가 되고 mode를 regression을 입력하면 "정밀 기기측정값" 예측이 된다.
 ```bash
 python tool/test.py --output_dir "output_directory_path" --mode "class" --name "model_name" --load_name "checkpoint_name"
