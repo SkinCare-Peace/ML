@@ -22,7 +22,7 @@ import argparse
 fix_seed(523)
 git_name = os.popen("git branch --show-current").readlines()[0].rstrip()
 
-
+# argparse 라이브러리를 사용해 하이퍼파라미터와 설정을 커맨드라인 인자로 받는다.
 def parse_args():
     parser = argparse.ArgumentParser()
 
@@ -56,20 +56,22 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--res",
-        default=256,
+        "--res", # 모델에 입력되는 이미지의 해상도
+        default=256, # 입력 이미지가 256*256
         type=int,
     )
 
     parser.add_argument(
-        "--gamma",
+        "--gamma", # 손실 함수의 가중치
+        # 예를 들어 Focal Loss나 Class Balanced Loss에서 어려운 샘플에 더 큰 가중치를 부여할 때 gamma가 사용한다.
+        # gamma가 클수록 어려운 샘플에 더 높은 가중치가 부여 => 모델이 다양한 난이도의 샘플을 다르게 학습하도록 조절.
         default=2,
         type=int,
     )
 
     parser.add_argument(
         "--load_epoch",
-        default=0,
+        default=0, # 처음부터 학습 시작 (중간에 중단된 학습을 재개할 때는 마지막에 저장된 epoch로 설정하여 이어서 학습 가능)
         type=int,
     )
 
@@ -80,14 +82,14 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--batch_size",
-        default=32,
-        type=int,
+        "--batch_size",  # 배치 크기 지정. (모델이 한 번의 학습 단계에서 처리할 데이터 샘플 수)
+        default=32, # 키우면 학습 속도가 빨라지지만 메모리 사용량 증가
+        type=int, # 모델의 성능과 학습 속도에 영향을 미치는 중요한 하이퍼파라미터 중 하나
     )
     
     parser.add_argument(
-        "--num_workers",
-        default=8,
+        "--num_workers",  # 데이터 로더에서 데이터를 불러오는 데 사용할 CPU 스레드 수 지정.
+        default=8, # 스레드 수가 많으면 빠르게 준비 가능. 너무 높으면 시스템 성능에 무리. (CPU 리소스 충분하면 올리면 됨.)
         type=int,
     )
 
@@ -118,6 +120,8 @@ def main(args):
     args.best_loss = {item: np.inf for item in model_num_class}
     args.load_epoch = {item: 0 for item in model_num_class}
 
+    # 각 피부 상태 지표별로 개별 ResNet50 모델을 생성하여 이를 딕셔너리로 저장
+    # model.fc는 각 상태별로 다르게 설정되며, 최종 분류 출력 크기를 각 상태별로 조정
     model_list = {
         key: models.resnet50(weights=models.ResNet50_Weights.DEFAULT, args=args)
         for key, _ in model_num_class.items()
@@ -178,7 +182,7 @@ def main(args):
 
     mkdir(model_path)
     mkdir(log_path)
-    writer = SummaryWriter(log_path)
+    writer = SummaryWriter(log_path)  # tensorboard는 
 
     logger = setup_logger(
         args.name + args.mode, os.path.join(check_path, "log", "train")
@@ -187,6 +191,7 @@ def main(args):
     logger.info("Command Line: " + " ".join(sys.argv))
 
     dataset = (
+        # 학습 및 검증 데이터를 CustomDataset_class 또는 CustomDataset_regress를 통해 불러오고, 학습 로그를 기록할 로거를 설정
         CustomDataset_class(args, logger, "train")
         if args.mode == "class"
         else CustomDataset_regress(args, logger)
@@ -227,18 +232,22 @@ def main(args):
             grade_num
         )
 
+        # 주어진 epoch 수만큼 학습을 반복
         for epoch in range(args.load_epoch[key], args.epoch):
             resnet_model.update_e(epoch + 1) if args.load_epoch else None
 
+            # 학습 및 검증
             resnet_model.train()
             resnet_model.valid()
 
             resnet_model.update_e(epoch + 1)
             resnet_model.reset_log()
 
-            if resnet_model.stop_early():
+            if resnet_model.stop_early(): # model.py의 Model 클래스 확인
                 break
-
+        
+        # 각 epoch가 끝날 때마다 trainset_loader와 valset_loader를 삭제하여 메모리 관리
+        # torch.cuda.empty_cache()를 통해 GPU 메모리도 비운다.
         del trainset_loader, valset_loader
 
         if torch.cuda.is_available():

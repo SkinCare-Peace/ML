@@ -13,7 +13,7 @@ if torch.cuda.is_available():
 else:
     device = torch.device("cpu")
 
-
+# 평가 지표를 누적하고 계산.
 class AverageMeter(object):
     def __init__(self):
         self.reset()
@@ -97,7 +97,8 @@ def resume_checkpoint(args, model, path):
 
     return model
 
-
+#  테스트용 모델 클래스
+# 모델 성능을 평가하고 결과를 저장하는 메서드 포함.
 class Model_test(object):
     def __init__(self, args, model_list, testset_loader, logger):
         super(Model_test, self).__init__()
@@ -107,6 +108,7 @@ class Model_test(object):
         self.test_loader = testset_loader
         self.count = defaultdict(int)
 
+        # 분류에 대한 평균 정확도와 손실 계산
         self.test_class_acc = {
             "sagging": AverageMeter(),
             "wrinkle_forehead": AverageMeter(),
@@ -117,6 +119,8 @@ class Model_test(object):
             "pigmentation_cheek": AverageMeter(),
             "dryness": AverageMeter(),
         }
+
+        # 회귀에 대한 평균 정확도와 손실 계산
         self.test_regresion_mae = {
             "moisture": AverageMeter(),
             "wrinkle": AverageMeter(),
@@ -204,6 +208,7 @@ class Model_test(object):
                     nan_list.append(batch_idx)
         return nan_list
 
+    # 각각 회귀와 분류에 대한 손실과 정확도 계산
     def get_test_loss(self, pred, gt):
         self.test_regresion_mae[self.m_dig].update(
             self.criterion(pred[0], gt).item(), batch_size=pred.shape[0]
@@ -212,6 +217,7 @@ class Model_test(object):
         self.pred.append([self.m_dig, pred.item()])
         self.gt.append([self.m_dig, gt.item()])
 
+    # 각각 회귀와 분류에 대한 손실과 정확도르 계산
     def get_test_acc(self, pred, gt):
         pred_v = [item.argmax().item() for item in pred]
         gt_v = [item.item() for item in gt]
@@ -226,6 +232,7 @@ class Model_test(object):
             pred.shape[0],
         )
 
+        # 예측 값과 실제값을 파일에 저장하여 나중에 분석할 수 있도록 함.
     def save_value(self):
         path = os.path.join("prediction", self.args.save_path)
         mkdir(path)

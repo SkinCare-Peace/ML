@@ -23,6 +23,7 @@ def mkdir(path):
         if e.errno != errno.EEXIST:
             raise
 
+# 분류용 데이터셋을 정의하는 클래스
 class CustomDataset_class(Dataset):
     def __init__(self, args, logger, mode):
         self.args = args
@@ -30,13 +31,15 @@ class CustomDataset_class(Dataset):
         self.load_list(mode)
         self.generate_datasets()
 
+    # 샐플 반환
     def __len__(self):
         return len(self.sub_path)
-
+    #label 반환
     def __getitem__(self, idx):
         idx_list = list(self.sub_path.keys())
         return idx_list[idx], self.sub_path[idx_list[idx]], self.train_num
 
+    # 학습, 검증, 테스트 데이터셋을 구성 (8:1:1)
     def generate_datasets(self):
         self.train_list, self.val_list, self.test_list = (
             defaultdict(lambda: defaultdict()),
@@ -124,6 +127,7 @@ class CustomDataset_class(Dataset):
                             json_meta, j_name, sub_path, target_list, sub_fold
                         )
 
+    # JSON 메타데이터 파일을 처리하여 이미지와 label 정보를 불러온다.
     def process_json_meta(
         self, json_meta, j_name, sub_path, target_list, sub_fold
     ):
@@ -163,6 +167,7 @@ class CustomDataset_class(Dataset):
                         ]
                     )
 
+    # 이미지와 label을 전처리하여 area_list에 저장
     def save_dict(self, transform):
         ori_img = cv2.imread(os.path.join("dataset/cropped_img", self.i_path + ".jpg"))
         pil_img = cv2.cvtColor(ori_img, cv2.COLOR_BGR2RGB)
@@ -228,6 +233,7 @@ class CustomDataset_class(Dataset):
                 )
             )
 
+    # 특정 디지트에 맞는 데이터셋을 생성하여 반환.
     def load_dataset(self, mode, dig):
         data_list = (
             self.train_list

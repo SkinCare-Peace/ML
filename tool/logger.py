@@ -11,7 +11,11 @@ from datetime import datetime
 # at the end of each emit. While closing file and reopening file after each
 # write is not efficient, it allows us to see partial logs when writing to
 # fused Azure blobs, which is very convenient
+
+# 프로그램의 실행 과정에서 중요한 정보를 기록하여, 디버깅과 분석을 돕습니다.
+
 class FileHandler(StreamHandler):
+    # 각 로깅 후 파일을 닫아 편리하게 로그를 확인할 수 있음.
     """
     A handler class which writes formatted logging records to disk files.
     """
@@ -65,6 +69,7 @@ class FileHandler(StreamHandler):
         return open(self.baseFilename, self.mode, encoding=self.encoding)
 
     def emit(self, record):
+        # stream이 비어있을 경우 파일을 열어 기록하고, 로그를 기록한 후 닫음.
         """
         Emit a record.
 
@@ -82,6 +87,7 @@ class FileHandler(StreamHandler):
 
 
 def setup_logger(name, path, filename="Evaluation.txt"):
+    # 로그를 기록할 logger 객체 생성. 
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
 
@@ -93,6 +99,7 @@ def setup_logger(name, path, filename="Evaluation.txt"):
     
     ch = logging.StreamHandler(stream=sys.stdout)
     ch.setLevel(logging.INFO)
+    # formatter를 사용해 로그 메시지 형식을 지정하고, 콘솔과 파일에 로그가 출력되도록 핸들러 설정.
     formatter1 = logging.Formatter('\r\033[95m'+"%(asctime)s\033[0m  %(message)s") 
     formatter2 = logging.Formatter("%(asctime)s %(message)s")
     ch.setFormatter(formatter1)
@@ -108,4 +115,5 @@ def setup_logger(name, path, filename="Evaluation.txt"):
     fh.setFormatter(formatter2)
     logger.addHandler(fh)
     
+    # 최종적으로 logger 객체를 변환하여 다른 모듈에서도 사용될 수 있도록 함.
     return logger

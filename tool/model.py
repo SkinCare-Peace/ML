@@ -24,8 +24,10 @@ if torch.cuda.is_available():
 else:
     device = torch.device("cpu")
 
-
+# 모델의 학습과 평가 로직
 class Model(object):
+
+    # 생성자, 초기 설정 담당
     def __init__(
         self,
         args,
@@ -121,6 +123,7 @@ class Model(object):
     def loss_avg(self, name):
         return round(self.test_value[name].avg, 4)
 
+    # 매 epoch마다 손실을 출력하며, 주어진 값이 최저 손실일 경우 체크포인트를 저장
     def print_loss(self, dataloader_len, final_flag=False):
         print(
             f"\rEpoch: {self.epoch} [{self.phase}][{self.m_dig}][{self.iter}/{dataloader_len}] ---- >  loss: {self.train_loss.avg if self.phase == 'Train' else self.val_loss.avg:.04f}",
@@ -176,8 +179,10 @@ class Model(object):
                     f"Epoch: {self.epoch} [{self.phase}][{self.m_dig}][{self.iter}/{dataloader_len}] ---- >  loss: {self.train_loss.avg if self.phase == 'Train' else self.val_loss.avg:.04f}"
                 )
 
+    # 검증 손실이 stop_early로 설정한 횟수만큼 개선되지 않을 때 학습을 중단
     def stop_early(self):
-        if self.update_c > self.args.stop_early:
+        if self.update_c > self.args.stop_early: 
+            # self.update_c는 모델의 검증 성능이 향상되지 않는 epoch 횟수를 추적하는 변수로 보이며, 이 값이 args.stop_early에서 설정한 임계값을 초과하면 학습을 중단
             mkdir(
                 os.path.join(
                     self.args.output_dir,
@@ -188,8 +193,9 @@ class Model(object):
                     "done",
                 )
             )
-            return True
-
+            return True # True 반환하면 중단.
+        
+    # 분류에 사용되는 손실함수 : 예측값과 실제 label 사이의 오차 계산
     def class_loss(self, pred, gt):
         loss = self.criterion(pred, gt)
 
@@ -209,6 +215,7 @@ class Model(object):
 
         return loss
 
+    # 회귀에 사용되는 손실함수 : 예측값과 실제 label 사이의 오차 계산
     def regression(self, pred, gt):
         pred = pred.flatten()
         loss = self.criterion(pred, gt)
@@ -258,12 +265,15 @@ class Model(object):
     def update_e(self, epoch):
         self.epoch = epoch
 
+    # 모델을 학습 모드로 설정.
     def train(self):
         self.model.train()
         self.phase = "Train"
         self.criterion = (
+            # 분류 학습일 경우
             CB_loss(samples_per_cls=self.grade_num, no_of_classes=len(self.grade_num), gamma = self.args.gamma)
             if self.args.mode == "class"
+            #  회귀 (regression)학습일 경우 L1Loss을 손실함수로 설정.
             else nn.L1Loss()
         )
         random_num = random.randrange(0, len(self.train_loader))
@@ -292,6 +302,7 @@ class Model(object):
 
         self.print_loss(len(self.train_loader), final_flag=True)
 
+    # 검증 모드로 전환하여 학습되지 않은 데이터로 모델 성능 평가
     def valid(self):
         self.phase = "Valid"
         self.criterion = (

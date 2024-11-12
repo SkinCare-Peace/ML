@@ -21,12 +21,14 @@ def collate_fn(data): # img, grade, img_name, dig, meta
     #     data.append()
     pass
 
+#  모델 출력을 확률로 변환
 def softmax(x):
     e_x = torch.exp(x - torch.max(x, dim=1, keepdim=True).values)
 
     return e_x / torch.sum(e_x, dim=1).unsqueeze(dim=1)
 
-
+# 체크포인트를 불러와 모델 가중치를 복원하는 함수
+# 훈련 중 모델 상태를 저장해 중단된 지점에서 다시 시작할 수 있게 한다.
 def resume_checkpoint(args, model, path, dig, test = True):
     state_dict = torch.load(path, map_location=device)
     if state_dict["best_loss"][dig] != np.inf and test:
@@ -154,7 +156,7 @@ class FocalLoss(nn.Module):
             return focal_loss
 
 
-
+# 클래스 불균형 보정 손실 함수로, 클래스별 샘플 수에 따른 가중치를 적용해 손실을 계산
 class CB_loss(nn.Module):
     def __init__(self, samples_per_cls, no_of_classes,  beta = 0.999, gamma = 2):
         super(CB_loss, self).__init__()
@@ -242,6 +244,7 @@ class CB_loss(nn.Module):
         
         return cb_loss
     
+# 평균 절대 백분율 오차(MAPE)를 계산해 회귀 성능을 평가하는 함수
 class mape_loss(nn.Module):
     def __init__(self):
         super(mape_loss, self).__init__()
@@ -254,7 +257,7 @@ class mape_loss(nn.Module):
         
         
     
-
+# 모델 체크포인트 저장
 def save_checkpoint(self):
     checkpoint_dir = os.path.join(self.args.output_dir, self.args.mode, self.args.name, "save_model", str(self.m_dig))
     mkdir(checkpoint_dir)
@@ -316,6 +319,7 @@ def save_image(self, img):
         cv2.putText(img_mat, name, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.41, (255, 255, 255), 1, cv2.LINE_AA)
     cv2.imwrite(os.path.join(path, f"epoch_{self.epoch}_iter_{self.iter}_{self.m_dig}.jpg"), img_mat.get()[:, :, (2, 1, 0)])
 
+# 사용되는 난수를 고정하여, 실행할 때마다 동일한 결과를 얻을 수 있도록 해주는 기능
 def fix_seed(random_seed):
     
     torch.use_deterministic_algorithms(True)

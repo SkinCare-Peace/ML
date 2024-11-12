@@ -20,6 +20,7 @@ from tool.utils import resume_checkpoint, fix_seed
 fix_seed(523)
 git_name = os.popen("git branch --show-current").readlines()[0].rstrip()
 
+# argparse 라이브러리를 통해 테스트 시 필요한 인자들 설정
 def parse_args():
     parser = argparse.ArgumentParser()
 
@@ -74,7 +75,7 @@ def parse_args():
 
     return args
 
-
+# 설정된 모델과 체크포인트를 불러와 테스트 데이터 평가
 def main(args):
     args.check_path = os.path.join(args.output_dir, args.mode, args.name)
 
@@ -100,6 +101,7 @@ def main(args):
         }
     )
 
+    # 각 상태별 resNet50 모델이 초기화 되어 있으며, CustomDataset_class 또는 CustomDataset_regress 클래스를 통해 테스트 데이터를 불러옴.
     model_list = {
         key: models.resnet50(weights=models.ResNet50_Weights.DEFAULT, args=args)
         for key, _ in model_num_class.items()
@@ -164,8 +166,8 @@ def main(args):
                 num_workers=args.num_workers,
                 shuffle=False,
             )
-            resnet_model.test(model, testset_loader, w_key)
-            resnet_model.print_test()
+            resnet_model.test(model, testset_loader, w_key) # 상태별로 테스트를 수행
+            resnet_model.print_test() # 정확도와 상관 계수 등의 평가 지표 출력
         torch.cuda.empty_cache()
         gc.collect()
     resnet_model.save_value()
