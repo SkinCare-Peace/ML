@@ -23,7 +23,7 @@ def mkdir(path):
         if e.errno != errno.EEXIST:
             raise
 
-# 분류용 데이터셋을 정의하는 클래스
+
 class CustomDataset_class(Dataset):
     def __init__(self, args, logger, mode):
         self.args = args
@@ -31,15 +31,13 @@ class CustomDataset_class(Dataset):
         self.load_list(mode)
         self.generate_datasets()
 
-    # 샐플 반환
     def __len__(self):
         return len(self.sub_path)
-    #label 반환
+
     def __getitem__(self, idx):
         idx_list = list(self.sub_path.keys())
         return idx_list[idx], self.sub_path[idx_list[idx]], self.train_num
 
-    # 학습, 검증, 테스트 데이터셋을 구성 (8:1:1)
     def generate_datasets(self):
         self.train_list, self.val_list, self.test_list = (
             defaultdict(lambda: defaultdict()),
@@ -75,7 +73,6 @@ class CustomDataset_class(Dataset):
                                     tt_list.append(each_value)
                             in_list.append(tt_list)
                     out_list[dig][grade] = in_list
-
 
     def load_list(self, mode="train"):
         self.mode = mode
@@ -127,7 +124,6 @@ class CustomDataset_class(Dataset):
                             json_meta, j_name, sub_path, target_list, sub_fold
                         )
 
-    # JSON 메타데이터 파일을 처리하여 이미지와 label 정보를 불러온다.
     def process_json_meta(
         self, json_meta, j_name, sub_path, target_list, sub_fold
     ):
@@ -167,10 +163,16 @@ class CustomDataset_class(Dataset):
                         ]
                     )
 
-    # 이미지와 label을 전처리하여 area_list에 저장
     def save_dict(self, transform):
         ori_img = cv2.imread(os.path.join("dataset/cropped_img", self.i_path + ".jpg"))
         pil_img = cv2.cvtColor(ori_img, cv2.COLOR_BGR2RGB)
+
+        pil = Image.fromarray(pil_img.astype(np.uint8))
+        patch_img = transform(pil)
+
+        # 기본값 초기화
+        label_data = None
+        desc_area = None
 
         s_list = self.i_path.split("/")[-1].split("_")
         desc_area = (
@@ -186,23 +188,18 @@ class CustomDataset_class(Dataset):
 
         if self.args.mode == "class":
             label_data = int(self.grade)
-        else:
+        elif self.args.mode == "regression":
             norm_v = self.norm_reg(self.value)
             label_data = norm_v
+        else:
+            raise ValueError(f"Unexpected mode: {self.args.mode}")
 
-        pil = Image.fromarray(pil_img.astype(np.uint8))
-        patch_img = transform(pil)
-
-        self.area_list.append(
-            [patch_img, label_data, desc_area]
-        )
+        if label_data is not None:
+            self.area_list.append(
+                [patch_img, label_data, desc_area]
+            )
 
     def should_skip_image(self, j_name, equ_name):
-
-        # 왼쪽 눈가/볼 ->  좌 15 & 30도
-        # 오른쪽 눈가/볼 -> 우 15 & 30도
-        # 턱선 -> 위, 아래
-
         if equ_name == "01":
             return (
                 (
@@ -221,7 +218,7 @@ class CustomDataset_class(Dataset):
             )
         else:
             return (
-                     (
+                (
                     j_name.split("_")[2] == "L"
                     and j_name.split("_")[3].split(".")[0]
                     in ["03", "05"]
@@ -233,7 +230,6 @@ class CustomDataset_class(Dataset):
                 )
             )
 
-    # 특정 디지트에 맞는 데이터셋을 생성하여 반환.
     def load_dataset(self, mode, dig):
         data_list = (
             self.train_list
@@ -245,22 +241,23 @@ class CustomDataset_class(Dataset):
 
         transform = transforms.Compose(
             [
-                transforms.Resize((self.args.res, self.args.res), antialias=True),
+                transforms.Resize((224, 224)),
                 transforms.ToTensor(),
-                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+                #transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+
+                # 이미지 전처리 부분 빠진듯
+                transforms.Normalize(mean=[0.485, 0.456, 0.406],  # 평균
+                        std=[0.229, 0.224, 0.225])   # 표준 편차 -> 위에 줄 이걸로 변경하기 (기존코드는 위에꺼)
             ]
         )
         
         data_list = dict(data_list)
         if self.args.mode == "class":
-            
-
             grade_num = dict()
             grade_num.update(
                 {key: len(value) for key, value in data_list[self.dig].items()}
             )
 
-            # for cb loss
             num_grade = [grade_num[num] for num in sorted(grade_num)]
 
             for self.grade, class_dict in tqdm(
@@ -271,7 +268,6 @@ class CustomDataset_class(Dataset):
                 ):
                     for self.i_path in sub_folder:
                         self.save_dict(transform)
-
         else:
             for full_dig in list(data_list.keys()):
                 if dig in full_dig:
@@ -304,7 +300,7 @@ class CustomDataset_class(Dataset):
             return value / 2600
 
         else:
-            assert 0, "dig_v is not here"
+            raise ValueError("dig_v is not here")
 
 
 class CustomDataset_regress(CustomDataset_class):
@@ -332,4 +328,4 @@ class CustomDataset_regress(CustomDataset_class):
                         else:
                             train_sub.append(value)
                     i += 1
-            self.train_list[dig], self.val_list[dig], self.test_list[dig]  = train_sub, val_sub, test_sub
+            self.train_list[dig], self.val_list[dig], self.test_list[dig] = train_sub, val_sub, test_sub
