@@ -4,6 +4,7 @@ import os
 
 import torch
 import gc
+import matplotlib.pyplot as plt
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -70,6 +71,15 @@ def parse_args():
         default=8,
         type=int,
     )
+
+    # 새로 추가된 인자
+    parser.add_argument(
+        "--model",
+        default="resnet",  # 기본값을 "resnet"으로 설정
+        type=str,
+        help="Specify the model type (e.g., resnet, coatnet, etc.)",
+    )
+
     
     args = parser.parse_args()
 
@@ -112,7 +122,7 @@ def main(args):
         model_list.update({key: model})
 
     model_path = os.path.join(
-        os.path.join(args.output_dir, args.mode, args.load_name), "save_model"
+        os.path.join(args.output_dir, args.mode, args.name), "save_model"
     )
     if os.path.isdir(model_path):
         for path in os.listdir(model_path):
@@ -170,6 +180,7 @@ def main(args):
             resnet_model.print_test() # 정확도와 상관 계수 등의 평가 지표 출력
         torch.cuda.empty_cache()
         gc.collect()
+
     resnet_model.save_value()
 
 

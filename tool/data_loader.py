@@ -95,6 +95,7 @@ class CustomDataset_class(Dataset):
             for item in natsort.natsorted(os.listdir(self.img_path))
             if not item.startswith(".")
         ]
+        self.logger.info(f"Found sub-paths: {sub_path_list}")
 
         self.json_dict = (
             defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
@@ -121,11 +122,23 @@ class CustomDataset_class(Dataset):
                     if self.should_skip_image(j_name, equ_name):
                         continue
 
-                    with open(os.path.join(folder_path, j_name), "r") as f:
-                        json_meta = json.load(f)
-                        self.process_json_meta(
-                            json_meta, j_name, sub_path, target_list, sub_fold
-                        )
+                    # with open(os.path.join(folder_path, j_name), "r") as f:
+                    #     json_meta = json.load(f)
+                    #     self.process_json_meta(
+                    #         json_meta, j_name, sub_path, target_list, sub_fold
+                    #     )
+                    json_file_path = os.path.join(folder_path, j_name)
+                    try:
+                        with open(json_file_path, "r") as f:
+                            json_meta = json.load(f)
+                    except json.JSONDecodeError as e:
+                        self.logger.error(f"Failed to decode JSON: {json_file_path}, Error: {e}")
+                        return
+                    except FileNotFoundError:
+                        self.logger.error(f"JSON file not found: {json_file_path}")
+                        return
+                    self.process_json_meta(json_meta, j_name, sub_path, target_list, sub_fold)
+
 
     # JSON 메타데이터 파일을 처리하여 이미지와 label 정보를 불러온다.
     def process_json_meta(
@@ -169,8 +182,22 @@ class CustomDataset_class(Dataset):
 
     # 이미지와 label을 전처리하여 area_list에 저장
     def save_dict(self, transform):
-        ori_img = cv2.imread(os.path.join("dataset/cropped_img", self.i_path + ".jpg"))
-        pil_img = cv2.cvtColor(ori_img, cv2.COLOR_BGR2RGB)
+        # ori_img = cv2.imread(os.path.join("dataset/cropped_img", self.i_path + ".jpg"))
+        # pil_img = cv2.cvtColor(ori_img, cv2.COLOR_BGR2RGB)
+
+        img_path = os.path.join("dataset/cropped_img", self.i_path + ".jpg")
+        ori_img = cv2.imread(img_path)
+
+        if ori_img is None:
+            self.logger.warning(f"Failed to load image: {img_path}")
+            return  # 이미지 로드 실패 시 현재 이미지를 건너뜀
+
+        try:
+            pil_img = cv2.cvtColor(ori_img, cv2.COLOR_BGR2RGB)
+        except cv2.error as e:
+            self.logger.error(f"Error converting image color: {img_path}, Error: {e}")
+            return
+
 
         s_list = self.i_path.split("/")[-1].split("_")
         desc_area = (

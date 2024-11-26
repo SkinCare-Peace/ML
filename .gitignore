@@ -7,6 +7,9 @@
 *.pyc
 *.out
 GradCAM.py
+* text=auto
+venv/* binary
+venv
 .env
 requirements.txt
 Dockerfile
@@ -38,3 +41,5 @@ cam.py
 
 
 NIA.tar
+
+

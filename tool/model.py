@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from scipy.stats import pearsonr
+import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 from data_loader import mkdir
@@ -21,12 +22,13 @@ from sklearn.metrics import precision_recall_fscore_support, mean_absolute_error
 
 if torch.cuda.is_available():
     device = torch.device("cuda")
+    #print("Cuda Cuda")
 else:
     device = torch.device("cpu")
+    #print("CPU CPU")
 
 # 모델의 학습과 평가 로직
 class Model(object):
-
     # 생성자, 초기 설정 담당
     def __init__(
         self,
@@ -68,7 +70,8 @@ class Model(object):
             dig_k,
             grade_num,
         )
-
+        self.train_losses = []  # 학습 손실 기록
+        self.val_losses = []  # 학습 손실 기록
         self.train_loss, self.val_loss = AverageMeter(), AverageMeter()
         self.keep_acc = {
             "sagging": AverageMeter(),
@@ -300,7 +303,9 @@ class Model(object):
             loss.backward()
             self.optimizer.step()
 
+        self.train_losses.append(self.train_loss.avg)  # 학습 손실 저장
         self.print_loss(len(self.train_loader), final_flag=True)
+        
 
     # 검증 모드로 전환하여 학습되지 않은 데이터로 모델 성능 평가
     def valid(self):
@@ -330,6 +335,28 @@ class Model(object):
 
             self.scheduler.step(self.val_loss.avg)
             self.print_loss(len(self.valid_loader), final_flag=True)
+            self.val_losses.append(self.val_loss.avg)  # 검증 손실 저장
+    
+    def plot_losses(self, key = None):
+        plt.figure(figsize=( 10, 6))
+        plt.plot(self.train_losses, label="Training Loss")
+        plt.plot(self.val_losses, label="Validation Loss")
+        plt.xlabel("Epochs")
+        plt.ylabel("Loss")
+
+         # 제목에 key(종류) 추가
+        title = f"Training and Validation Loss Over Epochs"
+        if key:
+            title += f" ({key})"
+        plt.title(title)
+        plt.legend()
+        plt.grid(True)
+
+        # 그래프 저장 경로 설정
+        graph_path = os.path.join(self.check_path, f"loss_curve_{key}.png" if key else "loss_curve.png")
+        plt.savefig(graph_path)
+        self.logger.info(f"Loss graph saved at {graph_path}")
+        plt.show()  # Jupyter 환경 등에서 확인 가능
 
 
 class Model_test(Model):
@@ -340,6 +367,7 @@ class Model_test(Model):
         self.pred_2 = defaultdict(lambda: defaultdict(list))
         self.gt_2 = defaultdict(lambda: defaultdict(list))
         self.logger = logger
+        self.device = device  # 디바이스 설정
 
     def test(self, model, testset_loader, key):
         self.model = model
@@ -353,7 +381,8 @@ class Model_test(Model):
                 img, label = img.to(device), label.to(device)
 
                 pred = (
-                    self.model.to(device)(img, meta_v)
+                    # self.model.to(device)(img, meta_v)
+                    self.model.to(device)(img)
                     if self.args.model != "coatnet"
                     else self.model.to(device)(img)
                 )

@@ -262,6 +262,10 @@ def save_checkpoint(self):
     checkpoint_dir = os.path.join(self.args.output_dir, self.args.mode, self.args.name, "save_model", str(self.m_dig))
     mkdir(checkpoint_dir)
     model_to_save = self.model.module if hasattr(self.model, "module") else self.model
+    
+    temp_file_path = os.path.join(checkpoint_dir, "temp_file.bin")
+    final_file_path = os.path.join(checkpoint_dir, "state_dict.bin")
+    
     torch.save(
         {
             "model_state": model_to_save.state_dict(),
@@ -269,13 +273,21 @@ def save_checkpoint(self):
             "best_loss": self.best_loss,
             "batch_size": self.args.batch_size
         },
-        os.path.join(checkpoint_dir, "temp_file.bin"),
+        #os.path.join(checkpoint_dir, "temp_file.bin"),
+        temp_file_path,
     )
 
-    os.rename(
-        os.path.join(checkpoint_dir, "temp_file.bin"),
-        os.path.join(checkpoint_dir, "state_dict.bin"),
-    )
+     # 기존 파일이 있으면 삭제
+    if os.path.exists(final_file_path):
+        os.remove(final_file_path)
+
+    # os.rename(
+    #     os.path.join(checkpoint_dir, "temp_file.bin"),
+    #     os.path.join(checkpoint_dir, "state_dict.bin"),
+    # )
+
+    # 임시 파일을 최종 파일로 이름 변경
+    os.rename(temp_file_path, final_file_path)
     
     return checkpoint_dir
 
