@@ -260,8 +260,8 @@ def main(args):
 
             if resnet_model.stop_early(): # model.py의 Model 클래스 확인
                 break
-
-        
+            
+        resnet_model.plot_losses(key=key)
 
         # 각 epoch가 끝날 때마다 trainset_loader와 valset_loader를 삭제하여 메모리 관리
         # torch.cuda.empty_cache()를 통해 GPU 메모리도 비운다.

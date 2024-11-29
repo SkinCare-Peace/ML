@@ -182,6 +182,7 @@ def main(args):
         gc.collect()
 
     resnet_model.save_value()
+    resnet_model.plot_Test_losses(key=key)
 
 
 if __name__ == "__main__":

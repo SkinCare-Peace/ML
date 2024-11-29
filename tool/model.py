@@ -358,6 +358,8 @@ class Model(object):
         self.logger.info(f"Loss graph saved at {graph_path}")
         plt.show()  # Jupyter 환경 등에서 확인 가능
 
+    
+
 
 class Model_test(Model):
     def __init__(self, args, logger):
@@ -479,6 +481,42 @@ class Model_test(Model):
                 [pred_item.argmax().item(), self.img_names[idx]]
             )
             self.gt[self.m_dig].append([gt_item.item(), self.img_names[idx]])
+
+    def plot_Test_losses(self, key=None):
+        if not self.pred or not self.gt:
+            self.logger.warning("Test predictions or ground truths are missing.")
+            return
+
+        # GT와 예측값 추출
+        gt_v = [value[0] for value in self.gt[self.m_dig]]
+        pred_v = [value[0] for value in self.pred[self.m_dig]]
+
+        # 그래프 생성
+        plt.figure(figsize=(10, 6))
+        plt.plot(gt_v, label="Ground Truth", marker="o")
+        plt.plot(pred_v, label="Prediction", marker="x")
+        plt.xlabel("Samples")
+        plt.ylabel("Values")
+        plt.grid(True)
+
+        # 그래프 제목에 테스트 키 포함
+        title = "Test Loss Curve"
+        if key:
+            title += f" ({key})"
+        plt.title(title)
+
+        plt.legend()
+
+        # 그래프 저장 경로 설정
+        graph_path = os.path.join(self.args.check_path, f"test_loss_curve_{key}.png" if key else "test_loss_curve.png")
+        plt.savefig(graph_path)
+        self.logger.info(f"Test loss graph saved at {graph_path}")
+
+        plt.show()  # Jupyter 환경 등에서 확인 가능
+
+
+
+
             
             
 
