@@ -1,3 +1,4 @@
+from cProfile import label
 import os
 import sys
 
@@ -89,7 +90,8 @@ def parse_args():
     
     parser.add_argument(
         "--num_workers",  # 데이터 로더에서 데이터를 불러오는 데 사용할 CPU 스레드 수 지정.
-        default=8, # 스레드 수가 많으면 빠르게 준비 가능. 너무 높으면 시스템 성능에 무리. (CPU 리소스 충분하면 올리면 됨.)
+        #default=8, # 스레드 수가 많으면 빠르게 준비 가능. 너무 높으면 시스템 성능에 무리. (CPU 리소스 충분하면 올리면 됨.)
+        default=12,
         type=int,
     )
 
@@ -103,6 +105,15 @@ def parse_args():
 def main(args):
     check_path = os.path.join(args.output_dir, args.mode, args.name)
     log_path = os.path.join("tensorboard", git_name, args.mode, args.name)
+
+    mkdir(check_path)
+    mkdir(log_path)
+    writer = SummaryWriter(log_path)
+    logger = setup_logger(args.name + args.mode, os.path.join(check_path, "log", "train"))
+    logger.info(args)
+
+    # 디바이스 설정
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model_num_class = (
         {"dryness":5, "pigmentation": 6, "pore": 6, "sagging": 7, "wrinkle": 7}
@@ -231,21 +242,27 @@ def main(args):
             key,
             grade_num
         )
-
+        resnet_model.model = resnet_model.model.to(device)  # 모델 디바이스 이동
+            # 데이터와 레이블 저장
+        resnet_model.data = data
+        resnet_model.label = label
         # 주어진 epoch 수만큼 학습을 반복
         for epoch in range(args.load_epoch[key], args.epoch):
             resnet_model.update_e(epoch + 1) if args.load_epoch else None
 
             # 학습 및 검증
             resnet_model.train()
+            # 학습 루프가 끝난 후 호출
             resnet_model.valid()
-
+            
             resnet_model.update_e(epoch + 1)
             resnet_model.reset_log()
 
             if resnet_model.stop_early(): # model.py의 Model 클래스 확인
                 break
-        
+            
+        resnet_model.plot_losses(key=key)
+
         # 각 epoch가 끝날 때마다 trainset_loader와 valset_loader를 삭제하여 메모리 관리
         # torch.cuda.empty_cache()를 통해 GPU 메모리도 비운다.
         del trainset_loader, valset_loader
@@ -254,6 +271,7 @@ def main(args):
             torch.cuda.empty_cache()
 
         gc.collect()
+    resnet_model.plot_losses(key=key)
 
 
 if __name__ == "__main__":
